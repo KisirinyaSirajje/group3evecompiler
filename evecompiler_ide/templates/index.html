@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EveCompiler IDE</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 EveCompiler IDE</h1>
+            <p class="subtitle">Mini-C Language Compiler with Full Error Detection</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Editor Panel -->
+            <div class="panel editor-panel">
+                <div class="panel-header">
+                    <h2>📝 Source Code</h2>
+                    <div class="button-group">
+                        <button id="compileBtn" class="btn btn-primary">🚀 Compile</button>
+                        <button id="clearBtn" class="btn btn-secondary">🗑️ Clear</button>
+                        <button id="sampleBtn" class="btn btn-secondary">📚 Load Sample</button>
+                    </div>
+                </div>
+                <textarea id="sourceCode" placeholder="Write your mini-C code here...
+
+Example:
+int x = 5;
+int y = 10;
+int z = x + y;
+if (z > 10) {
+    print(z);
+} else {
+    print(x);
+}
+"></textarea>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="panel results-panel">
+                <!-- Status -->
+                <div id="statusContainer" class="status-container hidden">
+                    <div id="statusMessage" class="status-message"></div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="output">📊 Output</button>
+                    <button class="tab-btn" data-tab="tokens">🔤 Tokens</button>
+                    <button class="tab-btn" data-tab="symbols">📋 Symbol Table</button>
+                    <button class="tab-btn" data-tab="ir">⚙️ IR Code</button>
+                    <button class="tab-btn" data-tab="assembly">🤖 Assembly</button>
+                </div>
+
+                <!-- Tab Contents -->
+                <div class="tab-content">
+                    <!-- Output Tab -->
+                    <div id="output" class="tab-pane active">
+                        <div id="outputContent" class="content-box">
+                            <p class="placeholder">Compilation results will appear here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Tokens Tab -->
+                    <div id="tokens" class="tab-pane">
+                        <div id="tokensContent" class="content-box code-box">
+                            <p class="placeholder">Token list will appear here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Symbol Table Tab -->
+                    <div id="symbols" class="tab-pane">
+                        <div id="symbolsContent" class="content-box">
+                            <p class="placeholder">Symbol table will appear here...</p>
+                        </div>
+                    </div>
+
+                    <!-- IR Code Tab -->
+                    <div id="ir" class="tab-pane">
+                        <div id="irContent" class="content-box code-box">
+                            <p class="placeholder">Optimized IR code will appear here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Assembly Tab -->
+                    <div id="assembly" class="tab-pane">
+                        <div id="assemblyContent" class="content-box code-box">
+                            <p class="placeholder">Generated assembly will appear here...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Programs Modal -->
+        <div id="sampleModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📚 Load Sample Program</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div id="sampleList" class="sample-list">
+                    <p>Loading samples...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
