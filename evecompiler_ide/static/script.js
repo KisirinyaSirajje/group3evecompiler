@@ -2,12 +2,27 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const sourceCodeEl = document.getElementById('sourceCode');
+    const lineNumbersEl = document.getElementById('lineNumbers');
     const compileBtn = document.getElementById('compileBtn');
     const clearBtn = document.getElementById('clearBtn');
     const sampleBtn = document.getElementById('sampleBtn');
     const sampleModal = document.getElementById('sampleModal');
     const closeBtn = document.querySelector('.close-btn');
     const statusContainer = document.getElementById('statusContainer');
+
+    // Line numbers
+    function updateLineNumbers() {
+        const count = sourceCodeEl.value.split('\n').length;
+        let nums = '';
+        for (let i = 1; i <= count; i++) nums += i + '\n';
+        lineNumbersEl.textContent = nums;
+        lineNumbersEl.scrollTop = sourceCodeEl.scrollTop;
+    }
+    sourceCodeEl.addEventListener('input', updateLineNumbers);
+    sourceCodeEl.addEventListener('scroll', () => {
+        lineNumbersEl.scrollTop = sourceCodeEl.scrollTop;
+    });
+    updateLineNumbers();
 
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -56,9 +71,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.success) {
                 showStatus('✅ Compilation successful!', 'success');
+                document.getElementById('errorBadge').classList.add('hidden');
                 displayOutput(data);
             } else {
                 showStatus(`❌ ${data.error}`, 'error');
+                const errCount = data.error.split('\n').filter(l => l.trim()).length;
+                const badge = document.getElementById('errorBadge');
+                badge.textContent = errCount + (errCount === 1 ? ' error' : ' errors');
+                badge.classList.remove('hidden');
                 document.getElementById('outputContent').innerHTML = 
                     `<div class="error-message"><strong>Compilation Error:</strong><br>${escapeHtml(data.error)}</div>`;
             }
