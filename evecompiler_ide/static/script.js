@@ -170,6 +170,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('assemblyContent').innerHTML = asmHTML;
         }
 
+        // AST tab
+        if (data.ast_tree) {
+            const astContainer = document.getElementById('astContent');
+            astContainer.innerHTML = '';
+            const svg = renderAstTree(data.ast_tree);
+            astContainer.appendChild(svg);
+        }
+
         // Switch to output tab
         switchTab('output');
     }
@@ -215,5 +223,118 @@ document.addEventListener('DOMContentLoaded', () => {
             "'": '&#039;'
         };
         return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // ── AST Tree Renderer ────────────────────────────────────────
+
+    function renderAstTree(root) {
+        const NODE_W    = 160;
+        const NODE_H    = 36;
+        const H_GAP     = 18;
+        const V_GAP     = 60;
+        const FONT_SIZE = 12;
+
+        // 1. Compute subtree widths bottom-up
+        function calcWidth(node) {
+            if (!node) return 0;
+            const kids = (node.children || []).filter(Boolean);
+            if (kids.length === 0) {
+                node._w = NODE_W;
+            } else {
+                kids.forEach(calcWidth);
+                const total = kids.reduce((s, k) => s + k._w, 0) + H_GAP * (kids.length - 1);
+                node._w = Math.max(NODE_W, total);
+            }
+        }
+
+        // 2. Assign x/y positions top-down
+        function assignPos(node, x, y) {
+            if (!node) return;
+            node._x = x + node._w / 2;
+            node._y = y;
+            const kids = (node.children || []).filter(Boolean);
+            let cx = x;
+            kids.forEach(k => {
+                assignPos(k, cx, y + NODE_H + V_GAP);
+                cx += k._w + H_GAP;
+            });
+        }
+
+        // 3. Collect all nodes and edges
+        function collect(node, edges, nodes) {
+            if (!node) return;
+            nodes.push(node);
+            (node.children || []).filter(Boolean).forEach(k => {
+                edges.push({ x1: node._x, y1: node._y + NODE_H,
+                             x2: k._x,   y2: k._y });
+                collect(k, edges, nodes);
+            });
+        }
+
+        // 4. Compute total canvas size
+        function maxXY(node, acc) {
+            if (!node) return acc;
+            acc.maxX = Math.max(acc.maxX, node._x + NODE_W / 2);
+            acc.maxY = Math.max(acc.maxY, node._y + NODE_H);
+            (node.children || []).filter(Boolean).forEach(k => maxXY(k, acc));
+            return acc;
+        }
+
+        calcWidth(root);
+        assignPos(root, 10, 10);
+
+        const edges = [], nodes = [];
+        collect(root, edges, nodes);
+        const { maxX, maxY } = maxXY(root, { maxX: 0, maxY: 0 });
+
+        const svgW = maxX + 20;
+        const svgH = maxY + 20;
+
+        const NS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('width',  svgW);
+        svg.setAttribute('height', svgH);
+        svg.setAttribute('class',  'ast-svg');
+
+        // Draw edges
+        edges.forEach(e => {
+            const line = document.createElementNS(NS, 'line');
+            line.setAttribute('x1', e.x1); line.setAttribute('y1', e.y1);
+            line.setAttribute('x2', e.x2); line.setAttribute('y2', e.y2);
+            line.setAttribute('class', 'ast-edge');
+            svg.appendChild(line);
+        });
+
+        // Draw nodes
+        nodes.forEach(n => {
+            const g = document.createElementNS(NS, 'g');
+
+            const rect = document.createElementNS(NS, 'rect');
+            rect.setAttribute('x',      n._x - NODE_W / 2);
+            rect.setAttribute('y',      n._y);
+            rect.setAttribute('width',  NODE_W);
+            rect.setAttribute('height', NODE_H);
+            rect.setAttribute('rx',     6);
+            rect.setAttribute('ry',     6);
+            rect.setAttribute('class',  'ast-node');
+            g.appendChild(rect);
+
+            const text = document.createElementNS(NS, 'text');
+            text.setAttribute('x',            n._x);
+            text.setAttribute('y',            n._y + NODE_H / 2 + FONT_SIZE / 3);
+            text.setAttribute('text-anchor',   'middle');
+            text.setAttribute('font-size',     FONT_SIZE);
+            text.setAttribute('class',         'ast-label');
+            // Truncate long labels
+            const label = (n.label || '').length > 22
+                ? (n.label || '').slice(0, 20) + '…'
+                : (n.label || '');
+            text.textContent = label;
+            g.appendChild(text);
+
+            svg.appendChild(g);
+        });
+
+        return svg;
     }
 });

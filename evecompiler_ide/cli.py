@@ -14,6 +14,133 @@ from compiler_phases.phase5_optimizer import optimize
 from compiler_phases.phase6_codegen import code_gen
 
 
+def ast_to_json(node):
+    """Convert AST tuple tree to a JSON-serialisable dict for visualisation."""
+    if node is None:
+        return None
+    if not isinstance(node, tuple):
+        return {'label': str(node), 'children': []}
+    kind = node[0]
+
+    def wrap(label, *children):
+        return {'label': label, 'children': [c for c in children if c is not None]}
+
+    def expr_node(n):
+        if n is None:
+            return None
+        if not isinstance(n, tuple):
+            return {'label': str(n), 'children': []}
+        k = n[0]
+        if k == 'NUM':
+            return wrap(str(n[1]))
+        if k == 'FLOAT_LIT':
+            return wrap(str(n[1]))
+        if k == 'STRING':
+            return wrap(n[1])
+        if k == 'CHAR':
+            return wrap(n[1])
+        if k == 'VAR':
+            return wrap(f'VAR: {n[1]}')
+        if k in ('BINOP', 'RELOP'):
+            return wrap(f'OP: {n[1]}', expr_node(n[2]), expr_node(n[3]))
+        if k == 'LOGOP':
+            return wrap(f'LOGOP: {n[1]}', expr_node(n[2]), expr_node(n[3]))
+        if k == 'NOT':
+            return wrap('!', expr_node(n[1]))
+        if k == 'UNARY_MINUS':
+            return wrap('UNARY -', expr_node(n[1]))
+        if k == 'INCR_EXPR':
+            return wrap(f'{"POST" if n[3] else "PRE"}{n[1]}: {n[2]}')
+        if k == 'CALL':
+            args = [expr_node(a) for a in n[2]]
+            return {'label': f'CALL: {n[1]}', 'children': args}
+        if k == 'INDEX':
+            return wrap(f'INDEX: {n[1]}', expr_node(n[2]))
+        return wrap(str(n))
+
+    def stmt_node(n):
+        return ast_to_json(n)
+
+    def stmts(lst):
+        return [stmt_node(s) for s in (lst or []) if s is not None]
+
+    if kind == 'PROGRAM':
+        return {'label': 'PROGRAM', 'children': stmts(node[1])}
+    if kind == 'FUNC_DEF':
+        _, ret, name, params, body = node
+        param_nodes = [wrap(f'PARAM: {pt} {pn}') for pt, pn in params]
+        return {'label': f'FUNC: {ret} {name}',
+                'children': param_nodes + stmts(body)}
+    if kind == 'DECL':
+        _, name, expr, *rest = node
+        dtype = rest[0] if rest else 'int'
+        return wrap(f'DECL: {dtype} {name}', expr_node(expr))
+    if kind == 'MULTI_DECL':
+        _, dtype, pairs = node
+        children = [wrap(f'DECL: {dtype} {n}', expr_node(e)) for n, e in pairs]
+        return {'label': f'MULTI_DECL: {dtype}', 'children': children}
+    if kind == 'ARRAY_DECL':
+        _, dtype, name, size, init = node
+        return wrap(f'ARRAY_DECL: {dtype} {name}', expr_node(size))
+    if kind == 'ASSIGN':
+        _, name, expr = node
+        return wrap(f'ASSIGN: {name}', expr_node(expr))
+    if kind == 'ARRAY_ASSIGN':
+        _, name, idx, val = node
+        return wrap(f'ARRAY_ASSIGN: {name}', expr_node(idx), expr_node(val))
+    if kind == 'COMPOUND_ASSIGN':
+        _, op, name, expr = node
+        return wrap(f'COMPOUND {op}=: {name}', expr_node(expr))
+    if kind == 'INCR':
+        _, op, name, post = node
+        return wrap(f'{"POST" if post else "PRE"}{op}: {name}')
+    if kind == 'IF':
+        _, cond, then_body, else_body = node
+        then_node = {'label': 'THEN', 'children': stmts(then_body)}
+        else_node = {'label': 'ELSE', 'children': stmts(else_body)} if else_body else None
+        return wrap('IF', expr_node(cond), then_node, else_node)
+    if kind == 'FOR':
+        _, init, cond, update, body = node
+        return {'label': 'FOR', 'children': [
+            wrap('INIT', stmt_node(init)),
+            wrap('COND', expr_node(cond)),
+            wrap('UPDATE', stmt_node(update)),
+            {'label': 'BODY', 'children': stmts(body)},
+        ]}
+    if kind == 'WHILE':
+        _, cond, body = node
+        return wrap('WHILE', expr_node(cond),
+                    {'label': 'BODY', 'children': stmts(body)})
+    if kind == 'DO_WHILE':
+        _, body, cond = node
+        return wrap('DO_WHILE',
+                    {'label': 'BODY', 'children': stmts(body)},
+                    expr_node(cond))
+    if kind == 'SWITCH':
+        _, expr, cases, default = node
+        case_nodes = [{'label': 'CASE', 'children': [expr_node(cv)] + stmts(cs)}
+                      for cv, cs in cases]
+        default_node = {'label': 'DEFAULT', 'children': stmts(default)} if default else None
+        return {'label': 'SWITCH', 'children': [expr_node(expr)] + case_nodes +
+                ([default_node] if default_node else [])}
+    if kind == 'RETURN':
+        return wrap('RETURN', expr_node(node[1]))
+    if kind == 'PRINT':
+        return wrap('PRINT', expr_node(node[1]))
+    if kind == 'PRINTF':
+        return {'label': 'PRINTF', 'children': [expr_node(a) for a in node[1]]}
+    if kind == 'SCANF':
+        return {'label': 'SCANF', 'children': [wrap(f'&{v}') for v in node[1]]}
+    if kind == 'CALL_STMT':
+        _, name, args = node
+        return {'label': f'CALL: {name}', 'children': [expr_node(a) for a in args]}
+    if kind in ('BREAK',):
+        return wrap('BREAK')
+    if kind in ('CONTINUE',):
+        return wrap('CONTINUE')
+    return wrap(str(node))
+
+
 class CompilerError(Exception):
     """Base class for compiler errors"""
     pass

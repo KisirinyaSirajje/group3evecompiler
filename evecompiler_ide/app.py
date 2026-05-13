@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
 try:
-    from cli import compile_source
+    from cli import compile_source, ast_to_json
 except ImportError as e:
     print(f"ERROR: Cannot import cli: {e}")
     sys.exit(1)
@@ -84,6 +84,7 @@ def compile_api():
             response['tokens'] = [{'type': t[0], 'value': t[1]} for t in result['tokens']]
             response['assembly'] = result['assembly']
             response['optimized_ir'] = result['optimized_ir']
+            response['ast_tree'] = ast_to_json(result['ast'])
         
         return jsonify(response)
     

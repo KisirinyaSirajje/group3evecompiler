@@ -49,6 +49,7 @@ if (z > 10) {
                 <div class="tabs">
                     <button class="tab-btn active" data-tab="output">📊 Output</button>
                     <button class="tab-btn" data-tab="tokens">🔤 Tokens</button>
+                    <button class="tab-btn" data-tab="ast">🌳 AST</button>
                     <button class="tab-btn" data-tab="symbols">📋 Symbol Table</button>
                     <button class="tab-btn" data-tab="ir">⚙️ IR Code</button>
                     <button class="tab-btn" data-tab="assembly">🤖 Assembly</button>
@@ -67,6 +68,13 @@ if (z > 10) {
                     <div id="tokens" class="tab-pane">
                         <div id="tokensContent" class="content-box code-box">
                             <p class="placeholder">Token list will appear here...</p>
+                        </div>
+                    </div>
+
+                    <!-- AST Tab -->
+                    <div id="ast" class="tab-pane">
+                        <div id="astContent" class="content-box ast-box">
+                            <p class="placeholder">AST diagram will appear here after compilation...</p>
                         </div>
                     </div>
 

@@ -236,6 +236,37 @@ header h1 {
     padding: 15px;
 }
 
+/* AST diagram container */
+.ast-box {
+    overflow: auto;
+    background: #fafafa;
+    padding: 10px;
+}
+
+.ast-svg {
+    display: block;
+}
+
+.ast-edge {
+    stroke: #94a3b8;
+    stroke-width: 1.5;
+}
+
+.ast-node {
+    fill: #1e40af;
+    stroke: #1e3a8a;
+    stroke-width: 1;
+    rx: 6;
+    ry: 6;
+}
+
+.ast-label {
+    fill: #ffffff;
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-weight: 500;
+    pointer-events: none;
+}
+
 .code-line {
     margin-bottom: 4px;
     color: #333;
