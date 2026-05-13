@@ -21,6 +21,7 @@ class Parser:
         self.tokens = [(t[0], t[1]) for t in tokens]
         self.pos    = 0
         self._cur_line = 1
+        self._prev_line = 1
 
     def peek(self, offset=0):
         pos = self.pos + offset
@@ -28,13 +29,18 @@ class Parser:
 
     def consume(self, expected_kind=None, expected_value=None):
         tok = self.tokens[self.pos]
-        self._cur_line = self._token_lines[self.pos] if self.pos < len(self._token_lines) else self._cur_line
+        tok_line = self._token_lines[self.pos] if self.pos < len(self._token_lines) else self._cur_line
         if expected_kind and tok[0] != expected_kind:
+            # For missing semicolon, report the line where semicolon was expected (previous line)
+            error_line = self._cur_line if expected_kind == 'SEMI' else tok_line
             raise SyntaxError(
-                f'[Parser] Expected {expected_kind!r}, got {tok[0]!r} ({tok[1]!r})')
+                f'[Parser] Line {error_line}: Expected {expected_kind!r}, got {tok[0]!r} ({tok[1]!r})')
         if expected_value and tok[1] != expected_value:
+            error_line = self._cur_line if expected_value == ';' else tok_line
             raise SyntaxError(
-                f'[Parser] Expected {expected_value!r}, got {tok[1]!r}')
+                f'[Parser] Line {error_line}: Expected {expected_value!r}, got {tok[1]!r}')
+        self._prev_line = self._cur_line
+        self._cur_line = tok_line
         self.pos += 1
         return tok
 
@@ -178,7 +184,7 @@ class Parser:
         if tok[0] == 'SEMI':
             self.consume()
             return None
-        raise SyntaxError(f'[Parser] Unexpected token: {tok}')
+        raise SyntaxError(f'[Parser] Line {self._cur_line}: Unexpected token: {tok}')
 
     def _id_stmt(self):
         name = self.consume('ID')[1]
@@ -211,7 +217,7 @@ class Parser:
             self.consume('SEMI')
             return ('ASSIGN', name, val, self._cur_line)
         raise SyntaxError(
-            f'[Parser] Unexpected token after ID {name!r}: {tok}')
+            f'[Parser] Line {self._cur_line}: Unexpected token after ID {name!r}: {tok}')
 
     # ── Declaration ───────────────────────────────────────────────
 
@@ -548,7 +554,7 @@ class Parser:
             node = self.cond_expr()
             self.consume('RPAREN')
             return node
-        raise SyntaxError(f'[Parser] Unexpected token in expression: {tok}')
+        raise SyntaxError(f'[Parser] Line {self._cur_line}: Unexpected token in expression: {tok}')
 
 
 def parse(source):
