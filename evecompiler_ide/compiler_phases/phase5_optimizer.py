@@ -8,7 +8,8 @@ import operator
 from .phase4_irgen import generate_ir
 
 _ARITH_OPS = {'+': operator.add, '-': operator.sub,
-              '*': operator.mul, '/': operator.floordiv}
+              '*': operator.mul, '/': operator.floordiv,
+              '%': operator.mod}
 _REL_OPS   = {'<': operator.lt,  '>': operator.gt,
               '<=': operator.le, '>=': operator.ge,
               '==': operator.eq, '!=': operator.ne}
@@ -32,7 +33,7 @@ def optimize(ir_code):
         return str(v) if v is not None else name
 
     for instr in ir_code:
-        m = re.match(r'^(\w+) = (\w+) ([+\-*/]) (\w+)$', instr)
+        m = re.match(r'^(\w+) = (\w+) ([+\-*/%]) (\w+)$', instr)
         if m:
             dest, left, op, right = m.groups()
             lv, rv = resolve(left), resolve(right)
