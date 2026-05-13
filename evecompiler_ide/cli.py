@@ -80,19 +80,19 @@ def ast_to_json(node):
         children = [wrap(f'DECL: {dtype} {n}', expr_node(e)) for n, e in pairs]
         return {'label': f'MULTI_DECL: {dtype}', 'children': children}
     if kind == 'ARRAY_DECL':
-        _, dtype, name, size, init = node
+        _, dtype, name, size, init, *_ = node
         return wrap(f'ARRAY_DECL: {dtype} {name}', expr_node(size))
     if kind == 'ASSIGN':
-        _, name, expr = node
+        _, name, expr, *_ = node
         return wrap(f'ASSIGN: {name}', expr_node(expr))
     if kind == 'ARRAY_ASSIGN':
-        _, name, idx, val = node
+        _, name, idx, val, *_ = node
         return wrap(f'ARRAY_ASSIGN: {name}', expr_node(idx), expr_node(val))
     if kind == 'COMPOUND_ASSIGN':
-        _, op, name, expr = node
+        _, op, name, expr, *_ = node
         return wrap(f'COMPOUND {op}=: {name}', expr_node(expr))
     if kind == 'INCR':
-        _, op, name, post = node
+        _, op, name, post, *_ = node
         return wrap(f'{"POST" if post else "PRE"}{op}: {name}')
     if kind == 'IF':
         _, cond, then_body, else_body = node

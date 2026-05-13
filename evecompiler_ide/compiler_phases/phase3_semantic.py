@@ -24,9 +24,10 @@ class SemanticAnalyzer:
             merged.update(scope)
         return merged
 
-    def _declare(self, name, dtype):
+    def _declare(self, name, dtype, line=None):
         if name in self._scopes[-1]:
-            self.errors.append(f"Variable '{name}' already declared")
+            msg = f"Variable '{name}' already declared"
+            self.errors.append(f"Line {line}: {msg}" if line else msg)
         else:
             self._scopes[-1][name] = dtype
 
@@ -68,7 +69,8 @@ class SemanticAnalyzer:
         elif kind == 'DECL':
             _, name, expr, *rest = node
             dtype = rest[0] if rest else 'int'
-            self._declare(name, dtype)
+            line  = rest[1] if len(rest) > 1 else None
+            self._declare(name, dtype, line)
             if expr is not None:
                 self._check_expr(expr)
 
@@ -80,34 +82,39 @@ class SemanticAnalyzer:
                     self._check_expr(expr)
 
         elif kind == 'ARRAY_DECL':
-            _, dtype, name, size_expr, init = node
-            self._declare(name, dtype + '[]')
+            _, dtype, name, size_expr, init, *rest = node
+            line = rest[0] if rest else None
+            self._declare(name, dtype + '[]', line)
             if size_expr is not None:
                 self._check_expr(size_expr)
 
         elif kind == 'ASSIGN':
-            _, name, expr = node
+            _, name, expr, *rest = node
+            line = rest[0] if rest else None
             if self._lookup(name) is None:
-                self.errors.append(f"Undeclared variable '{name}'")
+                self.errors.append(f"Line {line}: Undeclared variable '{name}'" if line else f"Undeclared variable '{name}'")
             self._check_expr(expr)
 
         elif kind == 'ARRAY_ASSIGN':
-            _, name, idx, val = node
+            _, name, idx, val, *rest = node
+            line = rest[0] if rest else None
             if self._lookup(name) is None:
-                self.errors.append(f"Undeclared variable '{name}'")
+                self.errors.append(f"Line {line}: Undeclared variable '{name}'" if line else f"Undeclared variable '{name}'")
             self._check_expr(idx)
             self._check_expr(val)
 
         elif kind == 'COMPOUND_ASSIGN':
-            _, op, name, expr = node
+            _, op, name, expr, *rest = node
+            line = rest[0] if rest else None
             if self._lookup(name) is None:
-                self.errors.append(f"Undeclared variable '{name}'")
+                self.errors.append(f"Line {line}: Undeclared variable '{name}'" if line else f"Undeclared variable '{name}'")
             self._check_expr(expr)
 
         elif kind == 'INCR':
-            _, op, name, post = node
+            _, op, name, post, *rest = node
+            line = rest[0] if rest else None
             if self._lookup(name) is None:
-                self.errors.append(f"Undeclared variable '{name}'")
+                self.errors.append(f"Line {line}: Undeclared variable '{name}'" if line else f"Undeclared variable '{name}'")
 
         elif kind == 'IF':
             _, cond, then_body, else_body = node
@@ -172,9 +179,10 @@ class SemanticAnalyzer:
                 self._check_expr(arg)
 
         elif kind == 'SCANF':
+            line = node[2] if len(node) > 2 else None
             for var in node[1]:
                 if self._lookup(var) is None:
-                    self.errors.append(f"Undeclared variable '{var}'")
+                    self.errors.append(f"Line {line}: Undeclared variable '{var}'" if line else f"Undeclared variable '{var}'")
 
         elif kind == 'CALL_STMT':
             _, name, args = node
@@ -193,8 +201,9 @@ class SemanticAnalyzer:
             return
         kind = node[0]
         if kind == 'VAR':
+            line = node[2] if len(node) > 2 else None
             if self._lookup(node[1]) is None:
-                self.errors.append(f"Undeclared variable '{node[1]}'")
+                self.errors.append(f"Line {line}: Undeclared variable '{node[1]}'" if line else f"Undeclared variable '{node[1]}'")
         elif kind in ('BINOP', 'RELOP', 'LOGOP'):
             self._check_expr(node[2])
             self._check_expr(node[3])
@@ -205,17 +214,19 @@ class SemanticAnalyzer:
         elif kind in ('NUM', 'FLOAT_LIT', 'STRING', 'CHAR'):
             pass
         elif kind == 'INCR_EXPR':
-            _, op, name, post = node
+            _, op, name, post, *rest = node
+            line = rest[0] if rest else None
             if self._lookup(name) is None:
-                self.errors.append(f"Undeclared variable '{name}'")
+                self.errors.append(f"Line {line}: Undeclared variable '{name}'" if line else f"Undeclared variable '{name}'")
         elif kind == 'CALL':
             _, name, args = node
             for arg in args:
                 self._check_expr(arg)
         elif kind == 'INDEX':
-            _, name, idx = node
+            _, name, idx, *rest = node
+            line = rest[0] if rest else None
             if self._lookup(name) is None:
-                self.errors.append(f"Undeclared variable '{name}'")
+                self.errors.append(f"Line {line}: Undeclared variable '{name}'" if line else f"Undeclared variable '{name}'")
             self._check_expr(idx)
         elif kind == 'ARRAY_INIT':
             for item in node[1]:

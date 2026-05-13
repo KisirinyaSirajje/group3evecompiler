@@ -64,7 +64,7 @@ class IRGenerator:
                     self._emit(f'{name} = {t}')
 
         elif kind == 'ARRAY_DECL':
-            _, dtype, name, size_expr, init = node
+            _, dtype, name, size_expr, init, *_ = node
             size = self._gen_expr(size_expr) if size_expr else '0'
             self._emit(f'array {name}[{size}]')
             if init is not None and init[0] == 'ARRAY_INIT':
@@ -73,20 +73,20 @@ class IRGenerator:
                     self._emit(f'{name}[{i}] = {v}')
 
         elif kind == 'ARRAY_ASSIGN':
-            _, name, idx, val = node
+            _, name, idx, val, *_ = node
             i = self._gen_expr(idx)
             v = self._gen_expr(val)
             self._emit(f'{name}[{i}] = {v}')
 
         elif kind == 'COMPOUND_ASSIGN':
-            _, op, name, expr = node
+            _, op, name, expr, *_ = node
             val = self._gen_expr(expr)
             t   = self._tmp()
             self._emit(f'{t} = {name} {op} {val}')
             self._emit(f'{name} = {t}')
 
         elif kind == 'INCR':
-            _, op, name, post = node
+            _, op, name, post, *_ = node
             arith = '+' if op == '++' else '-'
             t = self._tmp()
             self._emit(f'{t} = {name} {arith} 1')
@@ -264,7 +264,7 @@ class IRGenerator:
             self._emit(f'{t} = 0 - {val}')
             return t
         if kind == 'INCR_EXPR':
-            _, op, name, post = node
+            _, op, name, post, *_ = node
             arith = '+' if op == '++' else '-'
             t     = self._tmp()
             if post:
@@ -286,7 +286,7 @@ class IRGenerator:
             self._emit(f'{t} = call {name}')
             return t
         if kind == 'INDEX':
-            _, name, idx = node
+            _, name, idx, *_ = node
             i = self._gen_expr(idx)
             t = self._tmp()
             self._emit(f'{t} = {name}[{i}]')

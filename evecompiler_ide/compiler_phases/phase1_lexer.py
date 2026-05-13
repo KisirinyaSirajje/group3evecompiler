@@ -52,15 +52,20 @@ TOKEN_RE = re.compile(
 
 
 def tokenize(source):
-    """Tokenize source. Returns list of (kind, value) tuples."""
+    """Tokenize source. Returns list of (kind, value, line) tuples."""
     tokens = []
+    line = 1
     for m in TOKEN_RE.finditer(source):
         kind  = m.lastgroup
         value = m.group()
-        if kind in ('SKIP', 'COMMENT_ML', 'COMMENT_SL', 'PREPROC'):
+        if kind == 'SKIP':
+            line += value.count('\n')
+            continue
+        if kind in ('COMMENT_ML', 'COMMENT_SL', 'PREPROC'):
+            line += value.count('\n')
             continue
         if kind == 'MISMATCH':
             raise SyntaxError(f'[Lexer] Unexpected character: {value!r}')
-        tokens.append((kind, value))
-    tokens.append(('EOF', ''))
+        tokens.append((kind, value, line))
+    tokens.append(('EOF', '', line))
     return tokens

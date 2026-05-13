@@ -79,8 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const badge = document.getElementById('errorBadge');
                 badge.textContent = errCount + (errCount === 1 ? ' error' : ' errors');
                 badge.classList.remove('hidden');
-                document.getElementById('outputContent').innerHTML = 
-                    `<div class="error-message"><strong>Compilation Error:</strong><br>${escapeHtml(data.error)}</div>`;
+                document.getElementById('outputContent').innerHTML =
+                    `<div class="error-message"><strong>Compilation Error:</strong><br>${escapeHtml(data.error).replace(/\n/g, '<br>')}</div>`;
             }
         })
         .catch(error => {

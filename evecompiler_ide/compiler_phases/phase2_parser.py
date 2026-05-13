@@ -17,8 +17,10 @@ from .phase1_lexer import tokenize, TYPE_KEYWORDS
 
 class Parser:
     def __init__(self, tokens):
-        self.tokens = tokens
+        self._token_lines = [t[2] if len(t) > 2 else 1 for t in tokens]
+        self.tokens = [(t[0], t[1]) for t in tokens]
         self.pos    = 0
+        self._cur_line = 1
 
     def peek(self, offset=0):
         pos = self.pos + offset
@@ -26,6 +28,7 @@ class Parser:
 
     def consume(self, expected_kind=None, expected_value=None):
         tok = self.tokens[self.pos]
+        self._cur_line = self._token_lines[self.pos] if self.pos < len(self._token_lines) else self._cur_line
         if expected_kind and tok[0] != expected_kind:
             raise SyntaxError(
                 f'[Parser] Expected {expected_kind!r}, got {tok[0]!r} ({tok[1]!r})')
@@ -169,7 +172,7 @@ class Parser:
             op   = self.consume('INCR')[1]
             name = self.consume('ID')[1]
             self.consume('SEMI')
-            return ('INCR', op, name, False)
+            return ('INCR', op, name, False, self._cur_line)
         if tok[0] == 'ID':
             return self._id_stmt()
         if tok[0] == 'SEMI':
@@ -191,22 +194,22 @@ class Parser:
             self.consume('ASSIGN', '=')
             val = self.expr()
             self.consume('SEMI')
-            return ('ARRAY_ASSIGN', name, idx, val)
+            return ('ARRAY_ASSIGN', name, idx, val, self._cur_line)
         if tok[0] == 'INCR':
             op = self.consume('INCR')[1]
             self.consume('SEMI')
-            return ('INCR', op, name, True)
+            return ('INCR', op, name, True, self._cur_line)
         if tok[0] == 'COMPOUND':
             op_tok   = self.consume('COMPOUND')[1]
             arith_op = op_tok[0]
             val      = self.expr()
             self.consume('SEMI')
-            return ('COMPOUND_ASSIGN', arith_op, name, val)
+            return ('COMPOUND_ASSIGN', arith_op, name, val, self._cur_line)
         if tok[0] == 'ASSIGN':
             self.consume('ASSIGN', '=')
             val = self.expr()
             self.consume('SEMI')
-            return ('ASSIGN', name, val)
+            return ('ASSIGN', name, val, self._cur_line)
         raise SyntaxError(
             f'[Parser] Unexpected token after ID {name!r}: {tok}')
 
@@ -244,7 +247,7 @@ class Parser:
             extras.append((extra_name, extra_expr))
         self.consume('SEMI')
         if not extras:
-            return ('DECL', name, expr, dtype)
+            return ('DECL', name, expr, dtype, self._cur_line)
         return ('MULTI_DECL', dtype, [(name, expr)] + extras)
 
     def _parse_array_init(self):
@@ -290,7 +293,7 @@ class Parser:
             if self.peek()[0] == 'ASSIGN':
                 self.consume('ASSIGN', '=')
                 iexpr = self.expr()
-            init = ('DECL', iname, iexpr, dtype)
+            init = ('DECL', iname, iexpr, dtype, self._cur_line)
             self.consume('SEMI')
         else:
             init = self._for_expr()
@@ -313,18 +316,18 @@ class Parser:
         if self.peek()[0] == 'INCR':
             op   = self.consume('INCR')[1]
             name = self.consume('ID')[1]
-            return ('INCR', op, name, False)
+            return ('INCR', op, name, False, self._cur_line)
         name = self.consume('ID')[1]
         tok  = self.peek()
         if tok[0] == 'INCR':
             op = self.consume('INCR')[1]
-            return ('INCR', op, name, True)
+            return ('INCR', op, name, True, self._cur_line)
         if tok[0] == 'COMPOUND':
             op_tok = self.consume('COMPOUND')[1]
-            return ('COMPOUND_ASSIGN', op_tok[0], name, self.expr())
+            return ('COMPOUND_ASSIGN', op_tok[0], name, self.expr(), self._cur_line)
         if tok[0] == 'ASSIGN':
             self.consume('ASSIGN', '=')
-            return ('ASSIGN', name, self.expr())
+            return ('ASSIGN', name, self.expr(), self._cur_line)
         return ('EXPR_STMT', ('VAR', name))
 
     def while_stmt(self):
@@ -503,7 +506,7 @@ class Parser:
         if tok[0] == 'INCR':
             op   = self.consume('INCR')[1]
             name = self.consume('ID')[1]
-            return ('INCR_EXPR', op, name, False)
+            return ('INCR_EXPR', op, name, False, self._cur_line)
         return self.factor()
 
     def factor(self):
@@ -530,11 +533,11 @@ class Parser:
                 self.consume('LBRACKET')
                 idx = self.expr()
                 self.consume('RBRACKET')
-                return ('INDEX', name, idx)
+                return ('INDEX', name, idx, self._cur_line)
             if self.peek()[0] == 'INCR':
                 op = self.consume('INCR')[1]
-                return ('INCR_EXPR', op, name, True)
-            return ('VAR', name)
+                return ('INCR_EXPR', op, name, True, self._cur_line)
+            return ('VAR', name, self._cur_line)
         if tok[0] == 'LPAREN':
             self.consume('LPAREN')
             # type cast: (type) expr — parse and discard the cast
