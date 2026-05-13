@@ -21,6 +21,18 @@ document.addEventListener('DOMContentLoaded', () => {
     sourceCodeEl.addEventListener('input', updateLineNumbers);
     sourceCodeEl.addEventListener('scroll', () => {
         lineNumbersEl.scrollTop = sourceCodeEl.scrollTop;
+        // Update highlight position when scrolling
+        const highlight = document.getElementById('errorHighlight');
+        if (highlight) {
+            const textareaStyle = window.getComputedStyle(sourceCodeEl);
+            const lineHeight = parseFloat(textareaStyle.lineHeight);
+            const paddingTop = parseFloat(textareaStyle.paddingTop);
+            const lineMatch = highlight.dataset.lineNum;
+            if (lineMatch) {
+                const topPosition = (parseInt(lineMatch) - 1) * lineHeight + paddingTop;
+                highlight.style.top = topPosition + 'px';
+            }
+        }
     });
     updateLineNumbers();
 
@@ -72,6 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 showStatus('✅ Compilation successful!', 'success');
                 document.getElementById('errorBadge').classList.add('hidden');
+                // Remove any error highlight
+                const existingHighlight = document.getElementById('errorHighlight');
+                if (existingHighlight) existingHighlight.remove();
                 displayOutput(data);
             } else {
                 showStatus(`❌ ${data.error}`, 'error');
@@ -81,6 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 badge.classList.remove('hidden');
                 document.getElementById('outputContent').innerHTML =
                     `<div class="error-message"><strong>Compilation Error:</strong><br>${escapeHtml(data.error).replace(/\n/g, '<br>')}</div>`;
+                
+                // Extract and highlight error line
+                highlightErrorLine(data.error);
             }
         })
         .catch(error => {
@@ -95,6 +113,9 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceCodeEl.value = '';
         sourceCodeEl.focus();
         statusContainer.classList.add('hidden');
+        // Remove error highlight
+        const existingHighlight = document.getElementById('errorHighlight');
+        if (existingHighlight) existingHighlight.remove();
     });
 
     // Sample programs button
@@ -232,6 +253,61 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error loading samples:', error);
             document.getElementById('sampleList').innerHTML = '<p>Error loading samples</p>';
         });
+    }
+
+    function highlightErrorLine(errorMessage) {
+        // Extract line number from error message (e.g., "Line 3:")
+        const lineMatch = errorMessage.match(/Line (\d+)/);
+        if (!lineMatch) return;
+
+        const errorLineNum = parseInt(lineMatch[1], 10);
+        const lines = sourceCodeEl.value.split('\n');
+        if (errorLineNum < 1 || errorLineNum > lines.length) return;
+
+        // Remove any existing highlights
+        const existingHighlight = document.getElementById('errorHighlight');
+        if (existingHighlight) existingHighlight.remove();
+
+        // Get textarea properties
+        const editorWrapper = document.querySelector('.editor-wrapper');
+        const textareaStyle = window.getComputedStyle(sourceCodeEl);
+        const lineHeight = parseFloat(textareaStyle.lineHeight);
+        const paddingTop = parseFloat(textareaStyle.paddingTop);
+        const paddingLeft = parseFloat(textareaStyle.paddingLeft);
+
+        // Calculate position from the top of textarea content
+        const topPosition = (errorLineNum - 1) * lineHeight + paddingTop;
+
+        // Create highlight overlay
+        const highlight = document.createElement('div');
+        highlight.id = 'errorHighlight';
+        highlight.dataset.lineNum = errorLineNum; // Store line number for scroll sync
+        highlight.style.cssText = `
+            position: absolute;
+            left: 0;
+            top: ${topPosition}px;
+            width: 100%;
+            height: ${lineHeight}px;
+            background-color: rgba(255, 0, 0, 0.1);
+            border-bottom: 3px solid #ff4444;
+            pointer-events: none;
+            z-index: 10;
+            overflow: hidden;
+        `;
+        
+        editorWrapper.style.position = 'relative';
+        editorWrapper.style.overflow = 'hidden';
+        editorWrapper.appendChild(highlight);
+
+        // Scroll textarea to show error line
+        const lineStart = lines.slice(0, errorLineNum - 1).join('\n').length + (errorLineNum > 1 ? 1 : 0);
+        sourceCodeEl.focus();
+        sourceCodeEl.setSelectionRange(lineStart, lineStart);
+        
+        // Scroll with some padding
+        const targetScroll = Math.max(0, topPosition - lineHeight * 3);
+        sourceCodeEl.scrollTop = targetScroll;
+        lineNumbersEl.scrollTop = targetScroll;
     }
 
     function escapeHtml(text) {
