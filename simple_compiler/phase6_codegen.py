@@ -7,7 +7,7 @@ Run standalone: python phase6_codegen.py
 """
 
 import re
-from phase5_optimizer import optimize_from_source
+from simple_compiler.phase5_optimizer import optimize_from_source
 
 _ARITH_INST = {'+': 'ADD', '-': 'SUB', '*': 'MUL', '/': 'DIV'}
 _REL_INST   = {'<': 'CLT', '>': 'CGT', '<=': 'CLE',

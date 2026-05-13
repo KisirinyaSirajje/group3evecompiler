@@ -5,7 +5,7 @@ Walks the AST to build a symbol table and detect semantic errors
 Run standalone: python phase3_semantic.py
 """
 
-from phase2_parser import parse
+from simple_compiler.phase2_parser import parse
 
 
 class SemanticAnalyzer:

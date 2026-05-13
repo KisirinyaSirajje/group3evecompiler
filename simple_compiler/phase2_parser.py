@@ -4,7 +4,7 @@ Parses tokens into an Abstract Syntax Tree (AST) using a recursive-descent parse
 Run standalone: python phase2_parser.py
 """
 
-from phase1_lexer import tokenize
+from simple_compiler.phase1_lexer import tokenize
 
 
 class Parser:

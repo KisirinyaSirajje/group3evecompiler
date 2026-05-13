@@ -14,12 +14,12 @@ Individual phases can also be run on their own:
 
 from pprint import pformat
 
-from phase1_lexer     import tokenize
-from phase2_parser    import Parser
-from phase3_semantic  import SemanticAnalyzer
-from phase4_irgen     import IRGenerator
-from phase5_optimizer import optimize
-from phase6_codegen   import code_gen
+from simple_compiler.phase1_lexer     import tokenize
+from simple_compiler.phase2_parser    import Parser
+from simple_compiler.phase3_semantic  import SemanticAnalyzer
+from simple_compiler.phase4_irgen     import IRGenerator
+from simple_compiler.phase5_optimizer import optimize
+from simple_compiler.phase6_codegen   import code_gen
 
 # =============================================================
 #  Compiler Pipeline  —  mini-C language

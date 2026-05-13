@@ -8,7 +8,7 @@ Run standalone: python phase5_optimizer.py
 
 import re
 import operator
-from phase4_irgen import generate_ir
+from simple_compiler.phase4_irgen import generate_ir
 
 _ARITH_OPS = {'+': operator.add, '-': operator.sub,
               '*': operator.mul, '/': operator.floordiv}

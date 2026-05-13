@@ -5,7 +5,7 @@ and labels (L1, L2…) for control flow.
 Run standalone: python phase4_irgen.py
 """
 
-from phase3_semantic import analyze
+from simple_compiler.phase3_semantic import analyze
 
 
 class IRGenerator:
