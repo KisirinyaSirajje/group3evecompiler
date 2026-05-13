@@ -189,5 +189,5 @@ if __name__ == '__main__':
     print('⏹️  Press Ctrl+C to stop')
     print('='*70 + '\n')
     
-    app.run(debug=False, port=5000, host='127.0.0.1', threaded=True)
+    app.run(debug=False, port=int(os.environ.get('PORT', 5000)), host='0.0.0.0', threaded=True)
 
